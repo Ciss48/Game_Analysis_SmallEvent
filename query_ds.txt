@@ -1,0 +1,644 @@
+-- Đánh giá DAU của user trong tháng
+
+
+-- Đánh giá tổng doanh thu trong 1 tuần từ đó -> ARPU 
+-- Rev from iap per day
+select date_par, sum(event_value_in_usd) as revenue_from_iap_InUSD FROM `royal-hexa-in-house.pixon_data_science.001_mock` WHERE event_name = 'in_app_purchase' group by date_par order by date_par ;
+-- Rev from ads per day
+SELECT date_par, SUM(value) AS revenue_from_ad FROM ( SELECT date_par, (SELECT value.double_value FROM UNNEST(event_params) WHERE KEY = 'value') AS value FROM `royal-hexa-in-house.pixon_data_science.001_mock`  WHERE event_name = 'ad_impression' ) GROUP BY date_par ORDER BY date_par; 
+-- DAU
+select date_par,
+  count(distinct case when event_name = "session_start" then user_pseudo_id END) as DAU
+from `royal-hexa-in-house.pixon_data_science.001_mock`
+group by date_par;
+-- DAUP
+select date_par,
+  count(distinct case when event_name = "session_start" then user_pseudo_id END) as DAUP
+from `royal-hexa-in-house.pixon_data_science.001_mock`
+where user_pseudo_id in (
+  select user_pseudo_id from `royal-hexa-in-house.pixon_data_science.001_mock` where event_name = 'in_app_purchase'
+)
+group by date_par;
+-- MAU
+select count(distinct case when event_name = "session_start" then user_pseudo_id END) as MAU
+from `royal-hexa-in-house.pixon_data_science.001_mock`;
+
+-- Người chơi trả tiền: 
+select count(distinct  user_pseudo_id) as user_paid
+from `royal-hexa-in-house.pixon_data_science.001_mock`
+where user_pseudo_id in (
+  select user_pseudo_id from `royal-hexa-in-house.pixon_data_science.001_mock` where event_name = 'in_app_purchase'
+);
+
+
+-- Cohort 30 days
+WITH cohort AS (
+  -- Lấy danh sách user và ngày đầu tiên họ mở game
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS cohort_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open'
+),
+
+sessions AS (
+  -- Lấy tất cả session của user (các lần mở game sau đó)
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS session_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'session_start'
+),
+
+cohort_retention AS (
+  -- Ghép cohort với session để xác định ngày user quay lại game
+  SELECT 
+    c.user_id,
+    c.cohort_date,
+    s.session_date,
+    DATE_DIFF(s.session_date, c.cohort_date, DAY) AS day_number
+  FROM cohort c
+  LEFT JOIN sessions s 
+    ON c.user_id = s.user_id
+    AND s.session_date >= c.cohort_date
+)
+
+-- Tạo bảng hiển thị Cohort Retention từ 7d
+SELECT 
+  c.cohort_date,
+  COUNT(DISTINCT c.user_id) AS total_users,  -- Tổng số user trong cohort
+  COUNT(DISTINCT CASE WHEN cr.day_number = 0 THEN cr.user_id END) AS Day_0,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 1 THEN cr.user_id END) AS Day_1,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 2 THEN cr.user_id END) AS Day_2,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 3 THEN cr.user_id END) AS Day_3,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 4 THEN cr.user_id END) AS Day_4,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 5 THEN cr.user_id END) AS Day_5,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 6 THEN cr.user_id END) AS Day_6,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 7 THEN cr.user_id END) AS Day_7,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 8 THEN cr.user_id END) AS Day_8,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 9 THEN cr.user_id END) AS Day_9,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 10 THEN cr.user_id END) AS Day_10,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 11 THEN cr.user_id END) AS Day_11,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 12 THEN cr.user_id END) AS Day_12,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 13 THEN cr.user_id END) AS Day_13,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 14 THEN cr.user_id END) AS Day_14,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 15 THEN cr.user_id END) AS Day_15,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 16 THEN cr.user_id END) AS Day_16,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 17 THEN cr.user_id END) AS Day_17,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 18 THEN cr.user_id END) AS Day_18,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 19 THEN cr.user_id END) AS Day_19,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 20 THEN cr.user_id END) AS Day_20,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 21 THEN cr.user_id END) AS Day_21,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 22 THEN cr.user_id END) AS Day_22,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 23 THEN cr.user_id END) AS Day_23,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 24 THEN cr.user_id END) AS Day_24,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 25 THEN cr.user_id END) AS Day_25,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 26 THEN cr.user_id END) AS Day_26,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 27 THEN cr.user_id END) AS Day_27,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 28 THEN cr.user_id END) AS Day_28,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 29 THEN cr.user_id END) AS Day_29,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 30 THEN cr.user_id END) AS Day_30
+FROM cohort c
+LEFT JOIN cohort_retention cr 
+  ON c.user_id = cr.user_id
+GROUP BY 1
+ORDER BY 1;
+
+-- cohort 7 days - value
+WITH cohort AS (
+  -- Lấy danh sách user và ngày đầu tiên họ mở game
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS cohort_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open'
+    AND date_par >= '2025-01-23' 
+),
+
+sessions AS (
+  -- Lấy tất cả session của user (các lần mở game sau đó)
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS session_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'session_start'
+),
+
+cohort_retention AS (
+  -- Ghép cohort với session để xác định ngày user quay lại game
+  SELECT 
+    c.user_id,
+    c.cohort_date,
+    s.session_date,
+    DATE_DIFF(s.session_date, c.cohort_date, DAY) AS day_number
+  FROM cohort c
+  LEFT JOIN sessions s 
+    ON c.user_id = s.user_id
+    AND s.session_date >= c.cohort_date
+)
+
+-- Tạo bảng hiển thị Cohort Retention từ Day 0 đến Day 7
+SELECT 
+  c.cohort_date,
+  COUNT(DISTINCT c.user_id) AS total_users,  -- Tổng số user trong cohort
+  COUNT(DISTINCT CASE WHEN cr.day_number = 0 THEN cr.user_id END) AS Day_0,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 1 THEN cr.user_id END) AS Day_1,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 2 THEN cr.user_id END) AS Day_2,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 3 THEN cr.user_id END) AS Day_3,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 4 THEN cr.user_id END) AS Day_4,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 5 THEN cr.user_id END) AS Day_5,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 6 THEN cr.user_id END) AS Day_6,
+  COUNT(DISTINCT CASE WHEN cr.day_number = 7 THEN cr.user_id END) AS Day_7
+FROM cohort c
+LEFT JOIN cohort_retention cr 
+  ON c.user_id = cr.user_id
+GROUP BY 1
+ORDER BY 1;
+
+-- cohort 7days - %
+WITH cohort AS (
+  -- Lấy danh sách user và ngày đầu tiên họ mở game
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS cohort_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open'
+    AND date_par >= '2025-01-23' 
+),
+
+sessions AS (
+  -- Lấy tất cả session của user (các lần mở game sau đó)
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS session_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'session_start'
+),
+
+cohort_retention AS (
+  -- Ghép cohort với session để xác định ngày user quay lại game
+  SELECT 
+    c.user_id,
+    c.cohort_date,
+    s.session_date,
+    DATE_DIFF(s.session_date, c.cohort_date, DAY) AS day_number
+  FROM cohort c
+  LEFT JOIN sessions s 
+    ON c.user_id = s.user_id
+    AND s.session_date >= c.cohort_date
+)
+
+-- Tạo bảng hiển thị Cohort Retention % từ Day 0 đến Day 7
+SELECT 
+  c.cohort_date,
+  COUNT(DISTINCT c.user_id) AS total_users,  -- Tổng số user trong cohort
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 0 THEN cr.user_id END), COUNT(DISTINCT c.user_id))  AS Day_0,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 1 THEN cr.user_id END), COUNT(DISTINCT c.user_id))  AS Day_1,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 2 THEN cr.user_id END), COUNT(DISTINCT c.user_id))  AS Day_2,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 3 THEN cr.user_id END), COUNT(DISTINCT c.user_id))  AS Day_3,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 4 THEN cr.user_id END), COUNT(DISTINCT c.user_id))  AS Day_4,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 5 THEN cr.user_id END), COUNT(DISTINCT c.user_id))  AS Day_5,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 6 THEN cr.user_id END), COUNT(DISTINCT c.user_id))  AS Day_6,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 7 THEN cr.user_id END), COUNT(DISTINCT c.user_id))  AS Day_7
+FROM cohort c
+LEFT JOIN cohort_retention cr 
+  ON c.user_id = cr.user_id
+GROUP BY 1
+ORDER BY 1;
+
+
+-- ltv 
+WITH cohort AS (
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS cohort_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open' 
+),
+
+sessions AS (
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS session_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'session_start'
+),
+
+revenue AS (
+SELECT 
+  hihi.revenue_date, 
+  hihi.user_id, 
+  IFNULL(hihi.rev_ads, 0) + IFNULL(hihi.rev_iap, 0) as revenue
+FROM (
+  SELECT 
+    date_par as revenue_date,
+    user_pseudo_id as user_id,
+    SUM(IFNULL(event_value_in_usd, 0)) as rev_iap,
+    SUM(IFNULL((SELECT value.double_value FROM UNNEST(event_params) WHERE KEY = 'value'), 0)) AS rev_ads
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name in('in_app_purchase','ad_impression')
+  GROUP BY 1,2
+) as hihi
+),
+
+cohort_revenue AS (
+  SELECT 
+    c.user_id,
+    c.cohort_date,
+    r.revenue_date,
+    DATE_DIFF(r.revenue_date, c.cohort_date, DAY) AS day_number,
+    IFNULL(r.revenue, 0) AS revenue
+  FROM cohort c
+  LEFT JOIN revenue r 
+    ON c.user_id = r.user_id
+    AND r.revenue_date >= c.cohort_date
+)
+
+SELECT 
+  c.cohort_date,
+  COUNT(DISTINCT c.user_id) AS total_users,
+  COALESCE(SUM(CASE WHEN cr.day_number = 0 THEN cr.revenue END), 0) / COUNT(DISTINCT c.user_id) AS Day_0_ARPU,
+  COALESCE(SUM(CASE WHEN cr.day_number <= 1 THEN cr.revenue END), 0) / COUNT(DISTINCT c.user_id) AS LTV_Day_1,
+  COALESCE(SUM(CASE WHEN cr.day_number <= 7 THEN cr.revenue END), 0) / COUNT(DISTINCT c.user_id) AS LTV_Day_7,
+  COALESCE(SUM(cr.revenue), 0) / COUNT(DISTINCT c.user_id) AS LTV_Total
+FROM cohort c
+LEFT JOIN cohort_revenue cr 
+  ON c.user_id = cr.user_id
+GROUP BY 1
+ORDER BY 1;
+
+
+--  Winrate
+SELECT
+  SAFE_CAST(level AS STRING) AS level,  -- Ép kiểu về STRING để nhóm chung
+  COUNT(CASE WHEN event_name = 'start_level' THEN user_pseudo_id END) AS event_start,
+  COUNT(CASE WHEN event_name = 'lose_level'  THEN user_pseudo_id END) AS event_lose,
+  COUNT(CASE WHEN event_name = 'win_level'  THEN user_pseudo_id END) AS event_win,
+  COUNT(DISTINCT CASE WHEN event_name = 'start_level' THEN user_pseudo_id END) AS user_start,
+  COUNT(DISTINCT CASE WHEN event_name = 'lose_level'  THEN user_pseudo_id END) AS user_lose,
+  COUNT(DISTINCT CASE WHEN event_name = 'win_level'  THEN user_pseudo_id END) AS user_win,
+  COUNT(booster_type) as booster_spend
+FROM 
+(
+  SELECT 
+    user_pseudo_id,
+    event_name,
+    -- Lấy giá trị level, ưu tiên dạng INT, nếu không có thì lấy dạng STRING
+    COALESCE(
+      (SELECT SAFE_CAST(value.int_value AS STRING) FROM UNNEST(event_params) WHERE KEY = 'level'),
+      (SELECT value.string_value FROM UNNEST(event_params) WHERE KEY = 'level')
+    ) AS level,
+    (SELECT value.string_value FROM UNNEST(event_params) WHERE KEY = 'booster_type') AS booster_type
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name IN ('start_level', 'lose_level', 'win_level','booster_use')
+  AND date_par between '2025-01-10' and '2025-01-17' -- Đánh giá trong 1 tuần để đảm bảo dữ liệu chuẩn
+)
+GROUP BY level
+ORDER BY SAFE_CAST(level AS INT64); -- Sắp xếp theo số nếu có thể
+
+
+-- Doanh thu theo từng loại ads
+SELECT 
+  event_params_ad_format.value.string_value AS ad_format,
+  SUM(event_params_value.value.double_value) AS total_revenue
+FROM `royal-hexa-in-house.pixon_data_science.001_mock`,
+  UNNEST(event_params) AS event_params_ad_format,
+  UNNEST(event_params) AS event_params_value
+WHERE event_name = 'ad_impression'
+  AND event_params_ad_format.key = 'ad_format'
+  AND event_params_value.key = 'value'
+GROUP BY ad_format
+ORDER BY total_revenue DESC;
+
+-- số lượng booster được sử dụng theo booster_type
+SELECT 
+  event_params_booster.value.string_value AS booster_type,
+  COUNT(*) AS total_usage
+FROM `royal-hexa-in-house.pixon_data_science.001_mock`,
+  UNNEST(event_params) AS event_params_booster
+WHERE event_name = 'booster_use'
+  AND event_params_booster.key = 'booster_type'
+GROUP BY booster_type
+ORDER BY total_usage DESC;
+
+-- số lượng booster được mua theo booster_type
+SELECT 
+  event_params_booster.value.string_value AS booster_type,
+  COUNT(*) AS total_usage
+FROM `royal-hexa-in-house.pixon_data_science.001_mock`,
+  UNNEST(event_params) AS event_params_booster
+WHERE event_name = 'booster_use'
+  AND event_params_booster.key = 'booster_type'
+GROUP BY booster_type
+ORDER BY total_usage DESC;
+
+-- Phân bổ đồ được mua
+SELECT 
+  event_params_product.value.string_value AS product_name,
+  COUNT(*) AS num_purchases,
+  SUM(event_value_in_usd) AS total_revenue
+FROM `royal-hexa-in-house.pixon_data_science.001_mock`,
+  UNNEST(event_params) AS event_params_product
+WHERE event_name = 'in_app_purchase'
+  AND event_params_product.key = 'product_name'
+GROUP BY product_name
+ORDER BY total_revenue DESC;
+
+-- Loại ad_reward nào được sử dụng nhiều
+SELECT 
+  event_params_booster.value.string_value AS placement,
+  COUNT(*) AS total_usage
+FROM `royal-hexa-in-house.pixon_data_science.001_mock`,
+  UNNEST(event_params) AS event_params_booster
+WHERE event_name = 'ads_reward_complete'
+  AND event_params_booster.key = 'placement'
+GROUP BY placement
+ORDER BY total_usage DESC;
+
+-- Phân loại user để đánh giá
+select count(distinct user_pseudo_id) as new_user
+FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+where event_name = 'first_open' and date_par <= '2025-01-10'; -- Lấy ra 2099 user mới từ 01/01-01/10
+
+-- Lấy ra new user iap
+WITH new_users AS (
+  SELECT DISTINCT user_pseudo_id 
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open' 
+    AND date_par BETWEEN '2025-01-01' AND '2025-01-10'
+)
+SELECT COUNT(DISTINCT iap.user_pseudo_id) AS new_user_iap
+FROM `royal-hexa-in-house.pixon_data_science.001_mock` iap
+JOIN new_users nu ON iap.user_pseudo_id = nu.user_pseudo_id
+WHERE iap.event_name = 'in_app_purchase';
+
+
+-- Lấy ra new user chỉ có ads thuần
+WITH new_users AS (
+  SELECT DISTINCT user_pseudo_id 
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open' 
+    AND date_par BETWEEN '2025-01-01' AND '2025-01-10'
+),
+iap_users AS (
+  SELECT DISTINCT user_pseudo_id 
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'in_app_purchase'
+)
+SELECT COUNT(DISTINCT ads.user_pseudo_id) AS new_user_ads
+FROM `royal-hexa-in-house.pixon_data_science.001_mock` ads
+JOIN new_users nu ON ads.user_pseudo_id = nu.user_pseudo_id
+LEFT JOIN iap_users iap ON ads.user_pseudo_id = iap.user_pseudo_id
+WHERE ads.event_name = 'ads_reward_complete'
+  AND iap.user_pseudo_id IS NULL;
+
+-- Nhóm user còn lại: ko iap, ko ads_reward
+WITH new_users AS (
+  -- Lấy tất cả user mới từ 01/01 - 10/01
+  SELECT DISTINCT user_pseudo_id 
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open' 
+    AND date_par BETWEEN '2025-01-01' AND '2025-01-10'
+),
+iap_users AS (
+  -- Lấy user đã mua IAP
+  SELECT DISTINCT user_pseudo_id 
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'in_app_purchase'
+),
+ads_users AS (
+  -- Lấy user đã nhận thưởng từ quảng cáo
+  SELECT DISTINCT user_pseudo_id 
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'ads_reward_complete'
+)
+
+SELECT COUNT(DISTINCT nu.user_pseudo_id) AS remaining_users
+FROM new_users nu
+LEFT JOIN iap_users iap ON nu.user_pseudo_id = iap.user_pseudo_id
+LEFT JOIN ads_users ads ON nu.user_pseudo_id = ads.user_pseudo_id
+WHERE iap.user_pseudo_id IS NULL 
+  AND ads.user_pseudo_id IS NULL;
+
+
+
+
+-- ĐÁnh giá nhóm user iap - retention
+WITH new_users AS (
+  -- Lấy danh sách user mới tải app trong 10 ngày đầu tháng
+  SELECT DISTINCT user_pseudo_id, date_par AS cohort_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open'
+    AND date_par BETWEEN '2025-01-01' AND '2025-01-10'
+),
+iap_users AS (
+  -- Lọc user mới nhưng chỉ lấy user có IAP
+  SELECT DISTINCT nu.user_pseudo_id, nu.cohort_date
+  FROM new_users nu
+  JOIN `royal-hexa-in-house.pixon_data_science.001_mock` iap
+    ON nu.user_pseudo_id = iap.user_pseudo_id
+  WHERE iap.event_name = 'in_app_purchase'
+),
+sessions AS (
+  -- Lấy tất cả session của user này (các lần mở game sau khi tải)
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS session_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'session_start'
+),
+cohort_retention AS (
+  -- Ghép cohort với session để xác định ngày user quay lại game
+  SELECT 
+    iap.user_pseudo_id,
+    iap.cohort_date,
+    s.session_date,
+    DATE_DIFF(s.session_date, iap.cohort_date, DAY) AS day_number
+  FROM iap_users iap
+  LEFT JOIN sessions s 
+    ON iap.user_pseudo_id = s.user_id
+    AND s.session_date >= iap.cohort_date
+)
+-- Tạo bảng hiển thị Retention D1 và D7
+SELECT 
+  COUNT(DISTINCT iap.user_pseudo_id) AS total_users,  -- Tổng số user trong cohort
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 1 THEN cr.user_pseudo_id END), COUNT(DISTINCT iap.user_pseudo_id))  AS D1_retention,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 7 THEN cr.user_pseudo_id END), COUNT(DISTINCT iap.user_pseudo_id))  AS D7_retention
+FROM iap_users iap
+LEFT JOIN cohort_retention cr 
+  ON iap.user_pseudo_id = cr.user_pseudo_id;
+
+
+
+
+
+
+-- ĐÁnh giá nhóm user ads thuần - retention
+WITH new_users AS (
+  -- Lấy danh sách user mới tải app trong 10 ngày đầu tháng
+  SELECT DISTINCT user_pseudo_id, date_par AS cohort_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open'
+    AND date_par BETWEEN '2025-01-01' AND '2025-01-10'
+),
+iap_users AS (
+  -- Lấy danh sách user có IAP
+  SELECT DISTINCT user_pseudo_id
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'in_app_purchase'
+),
+ads_users AS (
+  -- Lấy user chỉ có Ads (không có IAP)
+  SELECT DISTINCT nu.user_pseudo_id, nu.cohort_date
+  FROM new_users nu
+  JOIN `royal-hexa-in-house.pixon_data_science.001_mock` ads
+    ON nu.user_pseudo_id = ads.user_pseudo_id
+  LEFT JOIN iap_users iap
+    ON ads.user_pseudo_id = iap.user_pseudo_id
+  WHERE ads.event_name = 'ads_reward_complete'
+    AND iap.user_pseudo_id IS NULL
+),
+sessions AS (
+  -- Lấy tất cả session của user này (các lần mở game sau khi tải)
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS session_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'session_start'
+),
+cohort_retention AS (
+  -- Ghép cohort với session để xác định ngày user quay lại game
+  SELECT 
+    au.user_pseudo_id,
+    au.cohort_date,
+    s.session_date,
+    DATE_DIFF(s.session_date, au.cohort_date, DAY) AS day_number
+  FROM ads_users au
+  LEFT JOIN sessions s 
+    ON au.user_pseudo_id = s.user_id
+    AND s.session_date >= au.cohort_date
+)
+-- Tạo bảng hiển thị Retention D1 và D7
+SELECT 
+  COUNT(DISTINCT au.user_pseudo_id) AS total_users,  -- Tổng số user trong cohort
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 1 THEN cr.user_pseudo_id END), COUNT(DISTINCT au.user_pseudo_id))  AS D1_retention,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 7 THEN cr.user_pseudo_id END), COUNT(DISTINCT au.user_pseudo_id))  AS D7_retention
+FROM ads_users au
+LEFT JOIN cohort_retention cr 
+  ON au.user_pseudo_id = cr.user_pseudo_id;
+
+
+
+
+
+
+
+-- retention nhóm user ko iap, ads
+WITH new_users AS (
+  -- Lấy tất cả user mới từ 01/01 - 10/01
+  SELECT DISTINCT user_pseudo_id, date_par AS cohort_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'first_open' 
+    AND date_par BETWEEN '2025-01-01' AND '2025-01-10'
+),
+
+iap_users AS (
+  -- Lấy user đã mua IAP
+  SELECT DISTINCT user_pseudo_id 
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'in_app_purchase'
+),
+
+ads_users AS (
+  -- Lấy user đã nhận thưởng từ quảng cáo
+  SELECT DISTINCT user_pseudo_id 
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'ads_reward_complete'
+),
+
+remaining_users AS (
+  -- Lọc ra user không có IAP, không có Ads
+  SELECT DISTINCT nu.user_pseudo_id, nu.cohort_date
+  FROM new_users nu
+  LEFT JOIN iap_users iap ON nu.user_pseudo_id = iap.user_pseudo_id
+  LEFT JOIN ads_users ads ON nu.user_pseudo_id = ads.user_pseudo_id
+  WHERE iap.user_pseudo_id IS NULL 
+    AND ads.user_pseudo_id IS NULL
+),
+
+sessions AS (
+  -- Lấy tất cả session của user này (các lần mở game sau khi tải)
+  SELECT 
+    user_pseudo_id AS user_id,
+    date_par AS session_date
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name = 'session_start'
+),
+
+cohort_retention AS (
+  -- Ghép cohort với session để xác định ngày user quay lại game
+  SELECT 
+    ru.user_pseudo_id,
+    ru.cohort_date,
+    s.session_date,
+    DATE_DIFF(s.session_date, ru.cohort_date, DAY) AS day_number
+  FROM remaining_users ru
+  LEFT JOIN sessions s 
+    ON ru.user_pseudo_id = s.user_id
+    AND s.session_date >= ru.cohort_date
+)
+
+-- Tạo bảng hiển thị Retention D1 và D7
+SELECT 
+  COUNT(DISTINCT ru.user_pseudo_id) AS total_users,  -- Tổng số user trong cohort
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 1 THEN cr.user_pseudo_id END), COUNT(DISTINCT ru.user_pseudo_id))  AS D1_retention,
+  SAFE_DIVIDE(COUNT(DISTINCT CASE WHEN cr.day_number = 7 THEN cr.user_pseudo_id END), COUNT(DISTINCT ru.user_pseudo_id))  AS D7_retention
+FROM remaining_users ru
+LEFT JOIN cohort_retention cr 
+  ON ru.user_pseudo_id = cr.user_pseudo_id;
+
+
+
+
+-- Winrate của 3 nhóm user 
+SELECT
+  SAFE_CAST(level AS STRING) AS level,  -- Ép kiểu về STRING để nhóm chung
+  COUNT(CASE WHEN event_name = 'start_level' THEN user_pseudo_id END) AS event_start,
+  COUNT(CASE WHEN event_name = 'lose_level'  THEN user_pseudo_id END) AS event_lose,
+  COUNT(CASE WHEN event_name = 'win_level'  THEN user_pseudo_id END) AS event_win,
+  COUNT(DISTINCT CASE WHEN event_name = 'start_level' THEN user_pseudo_id END) AS user_start,
+  COUNT(DISTINCT CASE WHEN event_name = 'lose_level'  THEN user_pseudo_id END) AS user_lose,
+  COUNT(DISTINCT CASE WHEN event_name = 'win_level'  THEN user_pseudo_id END) AS user_win,
+  COUNT(booster_type) as booster_spend
+FROM 
+(
+  SELECT 
+    user_pseudo_id,
+    event_name,
+    -- Lấy giá trị level, ưu tiên dạng INT, nếu không có thì lấy dạng STRING
+    COALESCE(
+      (SELECT SAFE_CAST(value.int_value AS STRING) FROM UNNEST(event_params) WHERE KEY = 'level'),
+      (SELECT value.string_value FROM UNNEST(event_params) WHERE KEY = 'level')
+    ) AS level,
+    (SELECT value.string_value FROM UNNEST(event_params) WHERE KEY = 'booster_type') AS booster_type
+  FROM `royal-hexa-in-house.pixon_data_science.001_mock`
+  WHERE event_name IN ('start_level', 'lose_level', 'win_level','booster_use')
+  AND date_par between '2025-01-10' and '2025-01-17' -- Đánh giá trong 1 tuần để đảm bảo dữ liệu chuẩn
+)
+GROUP BY level
+ORDER BY SAFE_CAST(level AS INT64);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
